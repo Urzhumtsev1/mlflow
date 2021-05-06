@@ -1,0 +1,77 @@
+version: '3.3'
+
+services:
+    db:
+        image: postgres:12-alpine
+        container_name: mlflow_postgres
+        ports:
+            - "5432:5432"
+        restart: always
+        volumes:
+            - ./config/db/postgresql:/var/lib/postgresql/data
+            - ./config/db/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+        env_file:
+            - .env
+        networks:
+            - backend
+
+    web:
+        restart: always
+        build: .
+        image: mlflow_server
+        container_name: mlflow_server
+        networks:
+            - frontend
+            - backend
+        env_file:
+            - .env
+        command: mlflow server --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/mlflow --default-artifact-root s3://mlflow_bucket/mlflow/ --host 0.0.0.0        
+
+    nginx:
+        restart: always
+        image: nginx:1.17.6
+        container_name: mlflow_nginx
+        ports:
+            - "5000:80"
+        networks:
+            - frontend
+        depends_on:
+            - web
+        volumes:
+            - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./config/nginx/mlflow.conf:/etc/nginx/sites-enabled/mlflow.conf
+
+    minio:
+        image: minio/minio:latest
+        container_name: mlflow_minio
+        restart: always
+        volumes:
+            - ./config/minio/data:/data
+            - ./config/minio:/root/.minio
+        ports:
+            - "9000:9000"
+        env_file:
+            - .env
+        command: server /data
+        networks:
+            - backend
+
+    createbuckets:
+        image: minio/mc
+        container_name: mlflow_minio_createbuckets
+        depends_on:
+            - minio
+        entrypoint: >
+            /bin/sh -c "
+            /usr/bin/mc config host add mlminio http://minio:9000 \$MINIO_ACCESS_KEY \$MINIO_SECRET_KEY;
+            /usr/bin/mc mb mlminio/mlflow/artifacts;
+            exit 0;
+            "
+        networks:
+            - backend
+
+networks:
+    frontend:
+        driver: bridge
+    backend:
+        driver: bridge
