@@ -129,6 +129,6 @@ dmypy.json
 .pyre/
 
 # Other
-
 /config/minio
 /config/db/postgresql
+mlruns/
