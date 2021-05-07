@@ -25,6 +25,9 @@ services:
             - backend
         env_file:
             - .env
+        depends_on:
+            - minio
+            - createbuckets
         command: mlflow server --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/mlflow --default-artifact-root s3://mlflow/artifacts/ --host 0.0.0.0        
 
     nginx:
@@ -67,6 +70,7 @@ services:
             /bin/sh -c "
             /usr/bin/mc config host add mlminio http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY};
             /usr/bin/mc mb mlminio/mlflow/artifacts;
+            /usr/bin/mc policy set public mlminio/mlflow;
             exit 0;
             "
         networks:

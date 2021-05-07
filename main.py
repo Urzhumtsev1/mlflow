@@ -15,11 +15,18 @@ PG_PORT=config['PG_PORT']
 
 uri=f"postgresql+psycopg2://{PG_USER}:{PG_PASS}@{PG_HOST}:{PG_PORT}/mlflow"
 mlflow.set_tracking_uri(uri)
-mlflow.set_experiment('exp_1')
+
+EXPERIMENT = 'exp_1' # Задаем имя эксперименту
+
+EXPERIMENT_ID = mlflow.create_experiment(
+    name=EXPERIMENT, 
+    artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
+)
+
 mlflow.tensorflow.autolog()
 mlflow.keras.autolog()
 
-mlflow.start_run()
+mlflow.start_run(experiment_id=EXPERIMENT_ID)
 
 model = tf.keras.Sequential([keras.layers.Dense(units=1, input_shape=[1])])
 
