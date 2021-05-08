@@ -28,7 +28,11 @@ services:
         depends_on:
             - minio
             - createbuckets
-        command: mlflow server --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/mlflow --default-artifact-root s3://mlflow/artifacts/ --host 0.0.0.0        
+        command: >
+            mlflow server 
+                --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/mlflow 
+                --default-artifact-root s3://mlflow/artifacts/ 
+                --host 0.0.0.0        
 
     nginx:
         restart: always
