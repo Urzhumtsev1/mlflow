@@ -18,15 +18,18 @@ mlflow.set_tracking_uri(uri)
 
 EXPERIMENT = 'exp_1' # Задаем имя эксперименту
 
-EXPERIMENT_ID = mlflow.create_experiment(
-    name=EXPERIMENT, 
-    artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
-)
+# EXPERIMENT_ID = mlflow.create_experiment(
+#     name=EXPERIMENT, 
+#     artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
+# )
+
+mlflow.set_experiment(EXPERIMENT)
 
 mlflow.tensorflow.autolog()
 mlflow.keras.autolog()
 
-mlflow.start_run(experiment_id=EXPERIMENT_ID)
+# mlflow.start_run(experiment_id=EXPERIMENT_ID)
+mlflow.start_run()
 
 model = tf.keras.Sequential([keras.layers.Dense(units=1, input_shape=[1])])
 
