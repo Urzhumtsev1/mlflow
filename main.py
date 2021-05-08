@@ -43,3 +43,10 @@ model.fit(xs, ys, epochs=500)
 # print(model.predict([10.0]))
 
 mlflow.end_run()
+
+
+# mlflow models build-docker -m "s3://mlflow/artifacts/exp_1/6863a1daf71f4f608569cb038a500f6d/artifacts/model" -n "mlflow-test-model"
+
+# curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{
+#     "data": [10.0]
+# }'
