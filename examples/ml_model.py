@@ -1,35 +1,28 @@
-import numpy as np
-import tensorflow as tf
-from dotenv import dotenv_values
-from tensorflow import keras
-
 import mlflow
 import mlflow.keras
 import mlflow.tensorflow
+import numpy as np
+import tensorflow as tf
+from mlflow.exceptions import MlflowException
+from tensorflow import keras
 
-config = dotenv_values(".env")
-PG_USER=config['POSTGRES_USER']
-PG_PASS=config['POSTGRES_PASSWORD']
-PG_HOST=config['PG_HOST']
-PG_PORT=config['PG_PORT']
+from config import URI
 
-uri=f"postgresql+psycopg2://{PG_USER}:{PG_PASS}@{PG_HOST}:{PG_PORT}/mlflow"
-mlflow.set_tracking_uri(uri)
-
+mlflow.set_tracking_uri(URI)
 EXPERIMENT = 'exp_1' # Задаем имя эксперименту
 
-# EXPERIMENT_ID = mlflow.create_experiment(
-#     name=EXPERIMENT, 
-#     artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
-# )
-
-mlflow.set_experiment(EXPERIMENT)
+try:
+    EXPERIMENT_ID = mlflow.create_experiment(
+        name=EXPERIMENT, 
+        artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
+    )
+    mlflow.start_run(experiment_id=EXPERIMENT_ID)
+except MlflowException as e:
+    mlflow.set_experiment(EXPERIMENT)
+    mlflow.start_run()
 
 mlflow.tensorflow.autolog()
 mlflow.keras.autolog()
-
-# mlflow.start_run(experiment_id=EXPERIMENT_ID)
-mlflow.start_run()
 
 model = tf.keras.Sequential([keras.layers.Dense(units=1, input_shape=[1])])
 

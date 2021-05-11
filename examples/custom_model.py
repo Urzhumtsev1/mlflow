@@ -1,22 +1,13 @@
 # Пример как создать произвольную модель и пользоваться возможностями mlflow: Tracking, . 
-
 from math import exp
 
-from dotenv import dotenv_values
-
 import mlflow
-from mlflow.types.schema import Schema, ColSpec
 from mlflow.models.signature import ModelSignature
+from mlflow.types.schema import ColSpec, Schema
 
-# Настройка различных подключений mlflow
-config = dotenv_values(".env")
-PG_USER=config['POSTGRES_USER']
-PG_PASS=config['POSTGRES_PASSWORD']
-PG_HOST=config['PG_HOST']
-PG_PORT=config['PG_PORT']
+from config import URI
 
-uri=f"postgresql+psycopg2://{PG_USER}:{PG_PASS}@{PG_HOST}:{PG_PORT}/mlflow"
-mlflow.set_tracking_uri(uri)
+mlflow.set_tracking_uri(URI)
 
 # Создание собственной произвольной модели
 class MegaModel(mlflow.pyfunc.PythonModel):
