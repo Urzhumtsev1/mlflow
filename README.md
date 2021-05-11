@@ -36,3 +36,29 @@ python3.9 -m venv env && source env/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+поднять контейнеры
+```bash
+docker-compose up -d
+```
+после этого можно запускать эксперименты
+```bash
+python examples/ml_model.py
+```
+Трекинг сервис mlflow http://localhost:5000/
+
+Объектное хранилище minio http://localhost:9000/minio/mlflow/
+
+Собрать докер образ модели
+```bash
+mlflow models build-docker -m "s3://mlflow/artifacts/название_эксперимента/хэш_эксперимента/artifacts/model" -n "mlflow-test-model"
+```
+Поднять модель
+```bash
+docker run -p 5001:8080 "mlflow-test-model"
+```
+Обратиться к модели
+```bash
+curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{
+    "data": [10.0]
+}'
+```
