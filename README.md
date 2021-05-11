@@ -26,6 +26,7 @@ AWS_ACCESS_KEY_ID=changeme
 AWS_SECRET_ACCESS_KEY=changeme
 MINIO_ACCESS_KEY=changeme
 MINIO_SECRET_KEY=changeme
+MLFLOW_S3_ENDPOINT_URL=http://minio:9000
 ```
 создать и активировать вируальное окружение ```python```
 ```bash
