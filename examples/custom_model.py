@@ -1,5 +1,4 @@
 # Пример как создать произвольную модель и пользоваться возможностями mlflow: Tracking, . 
-# from examples.ml_model import EXPERIMENT
 from math import exp
 
 import mlflow
@@ -51,6 +50,7 @@ model_target = [0, 1, 1]
 # Обьявление гиперпараметров.
 lr = 1
 
+# Начинаем эксперимент
 try:
     EXPERIMENT_ID = mlflow.create_experiment(
         name=EXPERIMENT, 
@@ -60,8 +60,6 @@ try:
 except MlflowException as e:
     mlflow.set_experiment(EXPERIMENT)
     mlflow.start_run()
-# Тут начинается обучение модели.
-# with mlflow.start_run(run_name='test_run') as run:
 
 # Сохраням параметры, которые хотим отслеживать в mlflow ui.
 mlflow.log_param('lr', lr)
@@ -76,9 +74,11 @@ mlflow.pyfunc.log_model(
     python_model=mm,
     signature=signature,
     input_example=input_example,
-    # registered_model_name='test_registration'
+    registered_model_name='test_registration'
 )
 
+# Заканчиваем эксперимент.
+mlflow.end_run()
 
 # Для того чтобы создать докер образ модели, следует прописать следующую команду:
 # mlflow models build-docker -m "runs:/some-run-uuid/my-model-dir" -n "my-image-name"
