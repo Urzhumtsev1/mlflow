@@ -1,13 +1,16 @@
 # Пример как создать произвольную модель и пользоваться возможностями mlflow: Tracking, . 
+# from examples.ml_model import EXPERIMENT
 from math import exp
 
 import mlflow
+from mlflow.exceptions import MlflowException
 from mlflow.models.signature import ModelSignature
 from mlflow.types.schema import ColSpec, Schema
 
 from config import URI
 
 mlflow.set_tracking_uri(URI)
+EXPERIMENT = 'mega_model_exp1'
 
 # Создание собственной произвольной модели
 class MegaModel(mlflow.pyfunc.PythonModel):
@@ -48,30 +51,43 @@ model_target = [0, 1, 1]
 # Обьявление гиперпараметров.
 lr = 1
 
-# Тут начинается обучение модели.
-with mlflow.start_run(run_name='test_run') as run:
-    # Сохраням параметры, которые хотим отслеживать в mlflow ui.
-    mlflow.log_param('lr', lr)
-
-    # Инициализация и обучение модели.
-    mm = MegaModel(lr)
-    mm.fit(model_input, model_target)
-
-    # Сохранение модели в виде артефакта и сопутсвующих конфигов.
-    mlflow.pyfunc.log_model(
-        artifact_path=model_path,
-        python_model=mm,
-        signature=signature,
-        input_example=input_example,
-        # registered_model_name='test_registration'
+try:
+    EXPERIMENT_ID = mlflow.create_experiment(
+        name=EXPERIMENT, 
+        artifact_location=f's3://mlflow/artifacts/{EXPERIMENT}'
     )
+    mlflow.start_run(experiment_id=EXPERIMENT_ID)
+except MlflowException as e:
+    mlflow.set_experiment(EXPERIMENT)
+    mlflow.start_run()
+# Тут начинается обучение модели.
+# with mlflow.start_run(run_name='test_run') as run:
+
+# Сохраням параметры, которые хотим отслеживать в mlflow ui.
+mlflow.log_param('lr', lr)
+
+# Инициализация и обучение модели.
+mm = MegaModel(lr)
+mm.fit(model_input, model_target)
+
+# Сохранение модели в виде артефакта и сопутсвующих конфигов.
+mlflow.pyfunc.log_model(
+    artifact_path=model_path,
+    python_model=mm,
+    signature=signature,
+    input_example=input_example,
+    # registered_model_name='test_registration'
+)
 
 
 # Для того чтобы создать докер образ модели, следует прописать следующую команду:
 # mlflow models build-docker -m "runs:/some-run-uuid/my-model-dir" -n "my-image-name"
 #
 # Пример:
-# mlflow models build-docker -m "s3://mlflow/artifacts/0/a2bc81a358564bd1ae0b7e28572e40d5/artifacts/testmodel" -n "mlflow-test-custom-model"
+# mlflow models build-docker -m "s3://mlflow/artifacts/mega_model_exp1/a034713bc47a402dab1e4c60074ac782/artifacts/testmodel" -n "mlflow-test-custom-model"
+#
+# Поднимаем сервис
+# docker run -p 5001:8080 "mlflow-test-custom-model"
 #
 # Пример запроса к моделе:
 # curl http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d '{
