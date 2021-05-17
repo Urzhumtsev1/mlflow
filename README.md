@@ -6,6 +6,7 @@ export MLFLOW_S3_ENDPOINT_URL="http://localhost:9000"
 export AWS_ACCESS_KEY_ID="changeme"
 export AWS_SECRET_ACCESS_KEY="changeme"
 export MLFLOW_S3_IGNORE_TLS="true"
+export MLFLOW_TRACKING_URI="http://localhost:5000"
 ```
 и активировать окружение 
 ```bash
