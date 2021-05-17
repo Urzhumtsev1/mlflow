@@ -133,3 +133,4 @@ dmypy.json
 /config/minio
 /config/db/postgresql
 mlruns/
+.metals/
