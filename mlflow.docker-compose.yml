@@ -47,6 +47,7 @@ services:
         volumes:
             - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
             - ./config/nginx/mlflow.conf:/etc/nginx/sites-enabled/mlflow.conf
+            - ./config/nginx/.htpasswd:/etc/nginx/.htpasswd
 
     minio:
         image: minio/minio:latest
