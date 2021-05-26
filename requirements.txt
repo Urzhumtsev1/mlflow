@@ -9,6 +9,9 @@ chardet==4.0.0
 click==7.1.2
 cloudpickle==1.6.0
 cycler==0.10.0
+cffi==1.14.5
+cryptography==3.4.7
+pycparser==2.20
 databricks-cli==0.14.3
 docker==5.0.0
 entrypoints==0.3

@@ -1,4 +1,6 @@
-# mlflow
+# mlflow & airflow
+
+Установить Docker CE и Docker Compose **v1.27.0+**
 
 Добавить в ```~/.profile``` 
 ```bash
@@ -11,6 +13,9 @@ export MLFLOW_TRACKING_URI="http://localhost:5000"
 и активировать окружение 
 ```bash
 source ~/.profile
+```
+```bash
+mkdir ./dags ./logs ./plugins
 ```
 
 колнировать проект и создать файл ```.env``` 
@@ -28,7 +33,26 @@ AWS_SECRET_ACCESS_KEY=changeme
 MINIO_ACCESS_KEY=changeme
 MINIO_SECRET_KEY=changeme
 MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:changeme@db/airflow
+AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://postgres:changeme@db/airflow
+AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
+AIRFLOW__CORE__FERNET_KEY=AVh9TstunFSoowrrgcGJ31hsjFmK0wFhs3BPdAmIxlc=
+AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+AIRFLOW__CORE__LOAD_EXAMPLES=true
+AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.basic_auth
+_AIRFLOW_DB_UPGRADE=true
+_AIRFLOW_WWW_USER_CREATE=true
+_AIRFLOW_WWW_USER_USERNAME=airflow
+_AIRFLOW_WWW_USER_PASSWORD=airflow
 ```
+Установить ```AIRFLOW__CORE__LOAD_EXAMPLES=true``` если нужны примеры DAGов
+
+еще немного переменных
+```bash
+echo -e "\nAIRFLOW_UID=$(id -u)\nAIRFLOW_GID=0" >> .env
+```
+
 создать и активировать вируальное окружение ```python```
 ```bash
 python3.9 -m venv env && source env/bin/activate
@@ -37,9 +61,15 @@ python3.9 -m venv env && source env/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+создаем свой AIRFLOW__CORE__FERNET_KEY и меняем соответствующие значение в ```.env```
+```bash
+python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)"
+```
+
 поднять контейнеры
 ```bash
-docker-compose up -d
+docker-compose -f mlflow.docker-compose.yml -f airflow.docker-compose.yml up -d
 ```
 после этого можно запускать эксперименты
 ```bash
