@@ -70,7 +70,7 @@ python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_
 установить пароль для mlflow
 ```bash
 sudo apt install apache2-utils -y;
-htpasswd -c /config/nginx/.htpasswd mlflow
+htpasswd -c config/nginx/.htpasswd mlflow
 ```
 Во время выполнения команды будет предложено дважды ввести пароль пользователя mlflow
 
