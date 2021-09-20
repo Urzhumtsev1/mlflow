@@ -41,6 +41,7 @@ with DAG(
     )
 
     data_exists = BranchSQLOperator(
+        task_id="BranchSQL",
         sql="sql/data_exists.sql",
         conn_id="POSTGRES_FIRES",
         follow_task_ids_if_true=["modis_partion", "viiris_partion", "eks_partion"],
