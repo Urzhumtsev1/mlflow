@@ -1,11 +1,31 @@
-FROM apache/airflow:2.0.2
+FROM apache/airflow:2.1.4
 USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
          vim \
+         gcc \
+         g++ \
+         libsasl2-dev \
   && apt-get autoremove -yqq --purge \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 USER airflow
-RUN pip install --no-cache-dir python-dotenv==0.17.1 requests apache-airflow-providers-mongo
+RUN pip install --no-cache-dir \ 
+  python-dotenv==0.17.1 \
+  requests==2.25.1 \
+  pymongo==3.12.0 \
+  apache-airflow-providers-mongo==2.1.0 \
+  apache-airflow-providers-apache-hdfs \
+  apache-airflow-providers-apache-hive \
+  apache-airflow-providers-apache-livy \
+  apache-airflow-providers-apache-spark \
+  apache-airflow-providers-apache-sqoop \
+  apache-airflow-providers-celery \
+  apache-airflow-providers-elasticsearch \
+  apache-airflow-providers-grpc \
+  apache-airflow-providers-jdbc \
+  apache-airflow-providers-redis \
+  apache-airflow-providers-telegram \
+  apache-airflow-providers-microsoft-mssql \
+  apache-airflow-providers-mysql
 RUN chmod 777 /home/airflow/.local/
