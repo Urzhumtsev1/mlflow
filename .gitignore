@@ -136,3 +136,4 @@ mlruns/
 .metals/
 logs/
 .htpasswd
+*.crt
