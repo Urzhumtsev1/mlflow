@@ -93,17 +93,6 @@ def _transform_records_to_request_params(points):
     return rq
 
 
-def _get_images_thumbs(ti):
-    request_params = ti.xcom_pull(task_ids="transform_data")
-    hook = HttpHook(http_conn_id="PLANET_SERVICE_CONN", method="POST")
-    items = {"items": request_params}
-    images = hook.run(
-        endpoint="planet/api/v1/thumbnail", 
-        data=json.dumps(items)
-    )
-    return images.json()
-
-
 def _get_images_assets(ti):
     request_params = ti.xcom_pull(task_ids="transform_data")
     hook = HttpHook(http_conn_id="PLANET_SERVICE_CONN", method="POST")
@@ -125,44 +114,14 @@ def _if_images_exists(ti):
         return ['load_images_thumbs', 'load_images_assets']
 
 
-def _load_images_thumbs(ti):
-    meta_data = ti.xcom_pull(task_ids="get_images_thumbs")
-    s3 = S3Hook(aws_conn_id="PLANET_S3CONN_ID")
-    bucket = Variable.get("PLANET_S3_BUCKET")
-    for image in meta_data:
-        # key - то как файл будет называться в s3, пока рандом
-        # к нему можно добавить префикс с папкой. и это храним в тоге в БД. Линки не нужны.
-        image_name = image["meta"]["id"] + ".png"
-        s3.load_bytes(
-            bytes_data=base64.b64decode(image["image"]),
-            key=image_name,
-            bucket_name=bucket,
-            replace=False
-        )
-        image["shape"] = json.dumps(image["shape"])
-        image["meta"] = json.dumps(image["meta"])
-        image["url"] = None
-        image["preview_url"] = image_name
-        del image["image"]
-    return meta_data
-
-
 def _load_images_assets(ti):
     """
-    Сама загрузка в s3 происходит в сервисе planet/api/v1/assets, 
+    Сама загрузка в s3 происходит в сервисе planet/api/v1/clipping, 
     так как не помещается в память.
     Таска создана для более лаконичного пайплайна. 
     По своей сути простой прокси.
     """
     assets_meta = ti.xcom_pull(task_ids="get_images_thumbs")
-    return assets_meta
-
-
-def _merge_meta(ti):
-    thumbs_meta = ti.xcom_pull(task_ids="load_images_thumbs")
-    assets_meta = ti.xcom_pull(task_ids="load_images_assets")
-    for i, image in enumerate(assets_meta):
-        image["preview_url"] = thumbs_meta[i]["url"]
     return assets_meta
 
 
@@ -209,22 +168,10 @@ with DAG(
         system_site_packages=False,
     )
 
-    task_get_images_thumbs = PythonOperator(
-        task_id='get_images_thumbs',
-        provide_context=True,
-        python_callable=_get_images_thumbs,
-    )
-
     task_get_images_assets = PythonOperator(
         task_id='get_images_assets',
         provide_context=True,
         python_callable=_get_images_assets,
-    )
-
-    task_load_images_thumbs = PythonOperator(
-        task_id='load_images_thumbs',
-        provide_context=True,
-        python_callable=_load_images_thumbs,
     )
 
     task_load_images_assets = PythonOperator(
@@ -238,11 +185,6 @@ with DAG(
         python_callable=_write_images_meta,
     )
 
-    task_merge_meta = PythonOperator(
-        task_id='merge_meta',
-        python_callable=_merge_meta,
-    )
-
     task_if_images_exists = BranchPythonOperator(
         task_id="if_images_exists",
         python_callable=_if_images_exists
@@ -253,6 +195,5 @@ with DAG(
         bash_command="echo 'No new images. Job Done'"
     )
     
-task_get_points >> task_transform_data >> [task_get_images_thumbs, task_get_images_assets] >> task_if_images_exists >> [task_load_images_thumbs, task_load_images_assets, task_dead_end] 
-task_load_images_thumbs >> task_merge_meta >> task_write_images_meta
-task_load_images_assets >> task_merge_meta >> task_write_images_meta
+task_get_points >> task_transform_data >> task_get_images_assets >> task_if_images_exists >> [task_load_images_assets, task_dead_end] 
+task_load_images_assets >> task_write_images_meta
