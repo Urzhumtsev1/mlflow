@@ -1,11 +1,8 @@
-import base64
 import json
 from datetime import datetime
 
 from airflow import DAG
 from airflow.hooks.postgres_hook import PostgresHook
-from airflow.hooks.S3_hook import S3Hook
-from airflow.models import Variable
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import (
     BranchPythonOperator, 
