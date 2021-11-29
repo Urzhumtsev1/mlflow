@@ -48,6 +48,7 @@ def _get_points(**kwargs):
     dag_run = kwargs.get('dag_run')
     if 'targets' in dag_run.conf:
         parameters = dag_run.conf['targets']
+        parameters = json.dumps(parameters)
         return parameters
     pg_hook = PostgresHook(postgres_conn_id="AIRFLOW_CONN_PG_PLANET_ETL")
     sql = """
@@ -74,14 +75,13 @@ def _transform_records_to_request_params(points):
     Returns:
         request_params (list[dict]): [description]
     """
-    
     import json
-    s = points.replace("'", '"')
-    rq = json.loads(s)
-
+    points = points.replace("'", '"')
+    points = json.loads(points)
     if 'manual_trigger' in points:
-        return rq['manual_trigger']
+        return points['manual_trigger']
 
+    rq = json.loads(points)
     from shapely import wkt
     from shapely.geometry import mapping
 
