@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from airflow import DAG
-from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import (
     BranchPythonOperator, 
@@ -98,11 +98,13 @@ def _get_images_assets(ti):
         endpoint="planet/api/v1/clipping", 
         data=json.dumps(items)
     )
-    return images.json()
+    rows = json.dumps(images.json())
+    return rows
 
 
 def _if_images_exists(ti):
     assets = ti.xcom_pull(task_ids="get_images_assets")
+    assets = json.loads(assets)
     # "message" in assets: {"message": "Download quota has been exceeded."}
     if assets is None or "message" in assets:
         return 'dead_end'
@@ -117,13 +119,21 @@ def _load_images_assets(ti):
     Таска создана для более лаконичного пайплайна. 
     По своей сути простой прокси.
     """
-    assets_meta = ti.xcom_pull(task_ids="if_images_exists")
+    assets_meta = ti.xcom_pull(task_ids="get_images_assets")
     return assets_meta
 
+def _prepare_meta(rows):
+    import json
+    from shapely.geometry import shape
+    rows = json.loads(rows)
+    for row in rows:
+        row['meta'] = json.dumps(row['meta'])
+        row['shape'] = shape(row['shape']).wkt
+    return rows
 
 def _write_images_meta(ti):
 
-    rows = ti.xcom_pull(task_ids="load_images_assets")
+    rows = ti.xcom_pull(task_ids="prepare_meta")
 
     db = PostgresHook(postgres_conn_id="AIRFLOW_CONN_PG_PLANET_ETL")
     conn = db.get_conn()
@@ -176,6 +186,14 @@ with DAG(
         python_callable=_load_images_assets,
     )
 
+    task_prepare_meta = PythonVirtualenvOperator(
+        task_id='prepare_meta',
+        requirements=["shapely==1.7.1"],
+        python_callable=_prepare_meta,
+        op_kwargs={'rows': '{{ ti.xcom_pull(task_ids="load_images_assets") }}'},
+        system_site_packages=False,
+    )
+
     task_write_images_meta = PythonOperator(
         task_id='write_images_meta',
         python_callable=_write_images_meta,
@@ -192,4 +210,4 @@ with DAG(
     )
     
 task_get_points >> task_transform_data >> task_get_images_assets >> task_if_images_exists >> [task_load_images_assets, task_dead_end] 
-task_load_images_assets >> task_write_images_meta
+task_load_images_assets >> task_prepare_meta >> task_write_images_meta
