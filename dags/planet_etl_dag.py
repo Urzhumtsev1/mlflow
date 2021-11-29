@@ -95,7 +95,7 @@ def _get_images_assets(ti):
     hook = HttpHook(http_conn_id="PLANET_SERVICE_CONN", method="POST")
     items = {"items": request_params}
     images = hook.run(
-        endpoint="planet/api/v1/assets", 
+        endpoint="planet/api/v1/clipping", 
         data=json.dumps(items)
     )
     return images.json()
