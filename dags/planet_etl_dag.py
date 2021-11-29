@@ -102,13 +102,12 @@ def _get_images_assets(ti):
 
 
 def _if_images_exists(ti):
-    thumbs = ti.xcom_pull(task_ids="get_images_thumbs")
     assets = ti.xcom_pull(task_ids="get_images_assets")
     # "message" in assets: {"message": "Download quota has been exceeded."}
-    if thumbs is None or "message" in assets:
+    if assets is None or "message" in assets:
         return 'dead_end'
     else:
-        return ['load_images_thumbs', 'load_images_assets']
+        return 'load_images_assets'
 
 
 def _load_images_assets(ti):
@@ -118,13 +117,13 @@ def _load_images_assets(ti):
     Таска создана для более лаконичного пайплайна. 
     По своей сути простой прокси.
     """
-    assets_meta = ti.xcom_pull(task_ids="get_images_thumbs")
+    assets_meta = ti.xcom_pull(task_ids="if_images_exists")
     return assets_meta
 
 
 def _write_images_meta(ti):
 
-    rows = ti.xcom_pull(task_ids="merge_meta")
+    rows = ti.xcom_pull(task_ids="load_images_assets")
 
     db = PostgresHook(postgres_conn_id="AIRFLOW_CONN_PG_PLANET_ETL")
     conn = db.get_conn()
@@ -189,7 +188,7 @@ with DAG(
 
     task_dead_end = BashOperator(
         task_id="dead_end",
-        bash_command="echo 'No new images. Job Done'"
+        bash_command="echo 'No images for geometry. Job Done'"
     )
     
 task_get_points >> task_transform_data >> task_get_images_assets >> task_if_images_exists >> [task_load_images_assets, task_dead_end] 
