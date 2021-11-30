@@ -54,13 +54,17 @@ def _get_points(**kwargs):
     sql = """
         SELECT
             ST_AsText(shape) as geometry,
-            COALESCE(to_char((now() - INTERVAL '10 DAY')::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS gte,
+            -- COALESCE(to_char((now() - INTERVAL '10 DAY')::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS gte,
+            COALESCE(to_char(now()::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS gte,
             COALESCE(to_char(now()::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS lte,
-            num_thumbs
+            cloud_cover,
+            num_thumbs,
+            filter
         FROM images.scan_points
         WHERE source = 'planet';
     """
     records = pg_hook.get_records(sql=sql)
+    records = json.dumps(records)
     return records
 
 
@@ -105,7 +109,7 @@ def _if_images_exists(ti):
     assets = ti.xcom_pull(task_ids="get_images_assets")
     assets = json.loads(assets)
     # "message" in assets: {"message": "Download quota has been exceeded."}
-    if assets is None or "message" in assets:
+    if assets is None or "message" in assets or assets == []:
         return 'dead_end'
     else:
         return 'load_images_assets'
