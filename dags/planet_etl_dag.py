@@ -2,13 +2,13 @@ import json
 from datetime import datetime
 
 from airflow import DAG
-from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import (
-    BranchPythonOperator, 
+    BranchPythonOperator,
     PythonOperator,
     PythonVirtualenvOperator)
 from airflow.providers.http.hooks.http import HttpHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 default_args = {
     "owner": "airflow",
@@ -81,13 +81,12 @@ def _transform_records_to_request_params(points):
     if 'manual_trigger' in points:
         return points['manual_trigger']
 
-    rq = json.loads(points)
     from shapely import wkt
     from shapely.geometry import mapping
 
-    for p in rq:
+    for p in points:
         p["geometry"] = mapping(wkt.loads(p["geometry"]))
-    return rq
+    return points
 
 
 def _get_images_assets(ti):
@@ -124,6 +123,7 @@ def _load_images_assets(ti):
 
 def _prepare_meta(rows):
     import json
+
     from shapely.geometry import shape
     rows = json.loads(rows)
     for row in rows:
