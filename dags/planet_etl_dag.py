@@ -153,7 +153,8 @@ def _write_images_meta(ti):
                     )
         """, rows)
         conn.commit()
-    return "Insertion done."
+    meta = [row['url'] for row in rows]
+    return meta
 
 
 with DAG(
