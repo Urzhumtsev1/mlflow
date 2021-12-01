@@ -33,9 +33,11 @@ def _get_points(**kwargs):
                             [66.71679496765137, 66.56007952524924]
                         ]]
                     },
+                    "linked_object_type": "quarries",
+                    "linked_object_id": 1,
                     "gte": "2021-09-27T14:01:52.018597",
                     "lte": "2021-11-26T14:01:52.018601",
-                    "num_thumbs": 1,
+                    "num_images": 1,
                     "cloud_cover": 0.3,
                     "filter": {
                         "need_padding": true,
@@ -57,8 +59,10 @@ def _get_points(**kwargs):
             -- COALESCE(to_char((now() - INTERVAL '10 DAY')::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS gte,
             COALESCE(to_char(now()::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS gte,
             COALESCE(to_char(now()::date, 'YYYY-MM-DD"T"HH:MI:SS'), '') AS lte,
+            linked_object_type,
+            linked_object_id,
             cloud_cover,
-            num_thumbs,
+            num_images,
             filter
         FROM images.scan_points
         WHERE source = 'planet';
@@ -139,19 +143,35 @@ def _write_images_meta(ti):
 
     rows = ti.xcom_pull(task_ids="prepare_meta")
 
+    from psycopg2.extras import execute_values
     db = PostgresHook(postgres_conn_id="AIRFLOW_CONN_PG_PLANET_ETL")
     conn = db.get_conn()
     cursor = conn.cursor()
     with cursor as c:
-        c.executemany(f"""
-                    INSERT INTO 
-                        images.satellite (
-                            source, shape, height, width, url, tt, meta
-                        )
-                    VALUES (
-                        %(source)s, %(shape)s, %(height)s, %(width)s, %(url)s, %(tt)s, %(meta)s
-                    )
-        """, rows)
+        sql = """
+            INSERT INTO images.satellite 
+                (source, shape, height, width, url, tt, meta)
+            VALUES %s
+            RETURNING id
+        """
+        execute_values(
+            c, sql, rows, 
+            template='(%(source)s, %(shape)s, %(height)s, %(width)s, %(url)s, %(tt)s, %(meta)s)'
+        )
+        # Собираем id которые были инкрементированы для их привязки к таблице images.services_images
+        ids = c.fetchall()
+        for i, row in enumerate(rows):
+            row.update({"satellite_image_id": ids[i]['id']})
+
+        sql = """
+            INSERT INTO images.services_images 
+                (linked_object_type, linked_object_id, satellite_image_id)
+            VALUES %s
+        """
+        execute_values(
+            c, sql, rows, 
+            template='(%(linked_object_type)s, %(linked_object_id)s, %(satellite_image_id)s)'
+        )
         conn.commit()
     meta = [row['url'] for row in rows]
     return meta
