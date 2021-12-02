@@ -136,7 +136,7 @@ def _prepare_meta(rows):
     rows = json.loads(rows)
     for row in rows:
         row['meta'] = json.dumps(row['meta'])
-        row['shape'] = shape(row['shape']).wkt
+        row['shape'] = f"SRID=4326; {shape(row['shape']).wkt}"
     return rows
 
 def _write_images_meta(ti):
