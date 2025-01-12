@@ -40,7 +40,7 @@ Markdown==3.3.4
 MarkupSafe==1.1.1
 matplotlib==3.4.1
 minio==7.0.3
-mlflow==1.16.0
+mlflow==2.16.0
 numpy==1.20.2
 oauthlib==3.1.0
 opt-einsum==3.3.0
